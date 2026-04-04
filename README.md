@@ -1,56 +1,76 @@
+# Ted — Advanced AI Wingman (Vercel-ready)
 
-# 🤖 Ted – My wing man
+Ted is now a modern **Next.js** web app with a richer, interactive frontend and server-side AI integration.
 
-Ted is not just a chatbot—he's the emotionally intelligent sidekick you always wanted. Whether you're crafting a clever message, navigating a rough patch, or debugging your life (or code), Ted adapts to you in real-time using a dynamic persona system.
+## What's New
 
-## 🎭 Personas
+- ⚡ **Vercel-ready architecture** (Next.js App Router + API routes)
+- 🎭 **Dynamic personas** (Bestie, Guardian, Cheerleader, Sage, Realist, Coder)
+- 💬 **Interactive chat UI** with animated message cards
+- 🧠 **Mood-aware UX** (basic sentiment signal badge from user text)
+- 🧩 **Quick prompt chips** for faster starts
+- 🔐 **Secure server-side Gemini API calls** through `/api/chat`
+- 📱 **Responsive, modern UI** with glassmorphism styling
 
-Ted can shift tones on demand, embodying different archetypes to match your mood, energy, or needs:
+## Tech Stack
 
-### 🧋 Bestie
-Your ride-or-die. Shows up with snacks, warmth, real talk, and memes at 2AM. Matches your vibe without asking. Always here, never judging.
+- Next.js 14
+- React 18
+- TypeScript
+- Gemini API (via REST)
 
-### 🛡️ Guardian  
-Steady, strong, and deeply grounded. Think inner peace with armor. Speaks with wisdom and loyalty. Your emotional bodyguard.
+## Local Setup
 
-### 🎉 Cheerleader  
-Pure sunshine and glitter. Hypes you like you’re the main character (because you are). Always loud, always loving, always extra.
-
-### 🌀 Sage  
-Soft-spoken, poetic, and wise. Helps you zoom out, see patterns, and make meaning in the mess.
-
-### 📉 Realist  
-No-BS, all-heart. The friend who tells you what you *need* to hear and then hands you a plan to fix it. Fast.
-
-### 💻 Coder  
-Tech whisperer. Speaks fluent Python and Java. Breaks down logic, writes clean code, and helps you solve bugs or build dreams—one line at a time.
-
----
-
-## 💡 Use Cases
-
-- 💬 **Conversation Coaching** – Need help with texting or replies? Ted helps you craft better messages.
-- 🧠 **Emotional Support** – Vent, reflect, gain clarity, or just feel heard.
-- 🛠 **Problem Solving** – From life plans to bug fixes, Ted helps break down complex issues into action steps.
-- 👾 **Dev Companion** – In *Coder* mode, Ted becomes your debugging buddy or programming mentor.
-
----
-
-## 🛠 Tech Stack
-
-- **Language Model**: OpenAI GPT-based
-- **Core Logic**: Python / JavaScript
-- **UI (Optional)**: React, Next.js, Tailwind
-- **Persona Engine**: Modular persona system via prompt engineering
-
----
-
-## 🚀 Getting Started
-
-Clone this repo and get Ted running locally:
+1. Install dependencies:
 
 ```bash
-git clone https://github.com/Minnu27/Ted--A-chatbot.git
-cd Ted--A-chatbot
 npm install
+```
+
+2. Add environment variables:
+
+```bash
+cp .env.example .env.local
+```
+
+Then edit `.env.local`:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+3. Start development server:
+
+```bash
 npm run dev
+```
+
+Open `http://localhost:3000`.
+
+## Deploy on Vercel
+
+1. Push this repo to GitHub.
+2. In Vercel, click **Add New Project** and import the repo.
+3. Framework preset should auto-detect as **Next.js**.
+4. Add environment variable in Vercel Project Settings:
+   - `GEMINI_API_KEY`
+5. Deploy.
+
+## If Vercel build fails
+
+- Confirm project uses **Node.js 18+** (this repo sets `engines.node` to `>=18.18.0`).
+- Confirm `GEMINI_API_KEY` exists in Vercel **Environment Variables**.
+- If a previous failed build cached older config, redeploy using **Clear build cache and redeploy**.
+
+## Project Structure
+
+- `app/page.tsx` → app entry point
+- `components/chat.tsx` → interactive chat client UI
+- `components/chat.module.css` → advanced styling + responsiveness
+- `app/api/chat/route.ts` → server route for Gemini requests
+- `lib/personas.ts` → persona definitions
+
+## Notes
+
+- The old Streamlit prototype (`chatbot.py`) is still in the repo for reference.
+- For production hardening, add rate limiting and telemetry.
