@@ -66,8 +66,9 @@ export default function Chat() {
       if (!response.ok || !data.reply) {
         throw new Error(data.error ?? "Something went wrong.");
       }
+      const reply = data.reply;
 
-      setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (error) {
       setMessages((prev) => [
         ...prev,

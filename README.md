@@ -37,6 +37,7 @@ Then edit `.env.local`:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-1.5-flash-latest
 ```
 
 3. Start development server:
@@ -56,6 +57,13 @@ Open `http://localhost:3000`.
    - `GEMINI_API_KEY`
 5. Deploy.
 
+## If Vercel build fails
+
+- Confirm project uses **Node.js 18+** (this repo sets `engines.node` to `>=18.18.0`).
+- Confirm `GEMINI_API_KEY` exists in Vercel **Environment Variables**.
+- Optionally set `GEMINI_MODEL` if you want to switch model versions without code changes.
+- If a previous failed build cached older config, redeploy using **Clear build cache and redeploy**.
+
 ## Project Structure
 
 - `app/page.tsx` → app entry point
@@ -68,3 +76,4 @@ Open `http://localhost:3000`.
 
 - The old Streamlit prototype (`chatbot.py`) is still in the repo for reference.
 - For production hardening, add rate limiting and telemetry.
+- Dependency versions were updated to use a patched Next.js 14.2.x release for safer Vercel builds.
