@@ -21,6 +21,7 @@ type GeminiResponse = {
 
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
+  const modelName = process.env.GEMINI_MODEL ?? "gemini-1.5-flash-latest";
   if (!apiKey) {
     return NextResponse.json(
       { error: "Missing GEMINI_API_KEY environment variable." },
@@ -58,16 +59,35 @@ export async function POST(request: Request) {
     }
   };
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    }
-  );
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25_000);
 
-  const data = (await response.json()) as GeminiResponse;
+  let response: Response;
+  try {
+    response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return NextResponse.json({ error: "Model request timed out. Please try again." }, { status: 504 });
+    }
+    return NextResponse.json({ error: "Network error while contacting model provider." }, { status: 502 });
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  let data: GeminiResponse;
+  try {
+    data = (await response.json()) as GeminiResponse;
+  } catch {
+    return NextResponse.json({ error: "Invalid response returned by model provider." }, { status: 502 });
+  }
 
   if (!response.ok) {
     return NextResponse.json(
