@@ -13,6 +13,7 @@ type Message = {
 type ChatResponse = {
   reply?: string;
   error?: string;
+  code?: string;
 };
 
 const quickPrompts = [
@@ -30,8 +31,6 @@ function detectMood(text: string): Message["mood"] {
   if (negative.some((word) => lower.includes(word))) return "negative";
   return "neutral";
 }
-
-const API_KEY_STORAGE_KEY = "ted_user_api_key";
 
 export default function Chat() {
   const [persona, setPersona] = useState<PersonaKey>("Bestie");
@@ -63,12 +62,6 @@ export default function Chat() {
   async function sendMessage(content: string) {
     const trimmed = content.trim();
     if (!trimmed || loading) return;
-
-    if (!apiKey.trim()) {
-      setSettingsOpen(true);
-      setStatusNote("Please enter a Gemini API key in Settings first.");
-      return;
-    }
 
     const userMessage: Message = {
       role: "user",
@@ -103,7 +96,6 @@ export default function Chat() {
 
       const reply = data.reply;
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
-      setStatusNote("");
     } catch (error) {
       setMessages((prev) => [
         ...prev,
