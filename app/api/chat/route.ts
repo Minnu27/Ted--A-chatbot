@@ -20,19 +20,26 @@ type GeminiResponse = {
 };
 
 export async function POST(request: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const requestApiKey = request.headers.get("x-gemini-api-key")?.trim();
+  const apiKey = requestApiKey || process.env.GEMINI_API_KEY;
   const modelName = process.env.GEMINI_MODEL ?? "gemini-1.5-flash-latest";
+
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Missing GEMINI_API_KEY environment variable." },
+      {
+        error:
+          "Missing API key. Add GEMINI_API_KEY on the server or save one in the UI settings panel."
+      },
       { status: 500 }
     );
   }
 
-  const body = (await request.json()) as {
-    persona?: PersonaKey;
-    messages?: IncomingMessage[];
-  };
+  let body: { persona?: PersonaKey; messages?: IncomingMessage[] };
+  try {
+    body = (await request.json()) as { persona?: PersonaKey; messages?: IncomingMessage[] };
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
 
   const persona = body.persona && body.persona in personas ? body.persona : "Bestie";
   const messages = body.messages ?? [];
