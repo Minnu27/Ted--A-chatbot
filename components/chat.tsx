@@ -31,6 +31,8 @@ function detectMood(text: string): Message["mood"] {
   return "neutral";
 }
 
+const API_KEY_STORAGE_KEY = "ted_user_api_key";
+
 export default function Chat() {
   const [persona, setPersona] = useState<PersonaKey>("Bestie");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -62,6 +64,12 @@ export default function Chat() {
     const trimmed = content.trim();
     if (!trimmed || loading) return;
 
+    if (!apiKey.trim()) {
+      setSettingsOpen(true);
+      setStatusNote("Please enter a Gemini API key in Settings first.");
+      return;
+    }
+
     const userMessage: Message = {
       role: "user",
       content: trimmed,
@@ -87,11 +95,15 @@ export default function Chat() {
 
       const data = (await response.json()) as ChatResponse;
       if (!response.ok || !data.reply) {
+        if (data.code === "MISSING_API_KEY") {
+          setSettingsOpen(true);
+        }
         throw new Error(data.error ?? "Something went wrong.");
       }
 
       const reply = data.reply;
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      setStatusNote("");
     } catch (error) {
       setMessages((prev) => [
         ...prev,
