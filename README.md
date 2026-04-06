@@ -10,6 +10,7 @@ Ted is now a modern **Next.js** web app with a richer, interactive frontend and 
 - 🧠 **Mood-aware UX** (basic sentiment signal badge from user text)
 - 🧩 **Quick prompt chips** for faster starts
 - 🔐 **Secure server-side Gemini API calls** through `/api/chat`
+- 🛠️ **In-app API key editor** (optional browser-stored override for quick testing)
 - 📱 **Responsive, modern UI** with glassmorphism styling
 
 ## Tech Stack
