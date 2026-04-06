@@ -38,6 +38,15 @@
   gap: 0.5rem;
 }
 
+.statusNote {
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(109, 141, 255, 0.35);
+  background: rgba(109, 141, 255, 0.12);
+  color: #d8e2ff;
+  font-size: 0.9rem;
+}
+
 .settingsPanel {
   display: grid;
   grid-template-columns: 1fr;

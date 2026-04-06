@@ -38,10 +38,12 @@ Then edit `.env.local`:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+# Optional alias supported too:
+# GOOGLE_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-1.5-flash-latest
 ```
 
-You can also set an API key directly from the chat UI (**Open settings → Gemini API Key → Save key**). This is stored in your browser localStorage and sent as a request header to the server route.
+You can also set an API key directly from the chat UI (**Open settings → Gemini API Key → Save key**). This is stored in your browser localStorage and sent as a request header to the server route. The app now opens settings automatically when no key is found.
 
 3. Start development server:
 

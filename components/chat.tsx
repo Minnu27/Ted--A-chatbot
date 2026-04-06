@@ -10,6 +10,12 @@ type Message = {
   mood?: "positive" | "neutral" | "negative";
 };
 
+type ChatResponse = {
+  reply?: string;
+  error?: string;
+  code?: "MISSING_API_KEY" | "INVALID_BODY" | "REQUEST_FAILED";
+};
+
 const quickPrompts = [
   "Help me write a kind but confident text reply.",
   "Give me a 3-step action plan for today.",
@@ -36,12 +42,16 @@ export default function Chat() {
   const [apiKey, setApiKey] = useState("");
   const [showApiKey, setShowApiKey] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [statusNote, setStatusNote] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const storedKey = window.localStorage.getItem(API_KEY_STORAGE_KEY);
     if (storedKey) {
       setApiKey(storedKey);
+    } else {
+      setSettingsOpen(true);
+      setStatusNote("Add your Gemini API key in Settings to start chatting.");
     }
   }, []);
 
@@ -68,14 +78,22 @@ export default function Chat() {
     const trimmed = apiKey.trim();
     if (!trimmed) {
       window.localStorage.removeItem(API_KEY_STORAGE_KEY);
+      setStatusNote("API key removed from this browser.");
       return;
     }
     window.localStorage.setItem(API_KEY_STORAGE_KEY, trimmed);
+    setStatusNote("API key saved in this browser. You can start chatting now.");
   }
 
   async function sendMessage(content: string) {
     const trimmed = content.trim();
     if (!trimmed || loading) return;
+
+    if (!apiKey.trim()) {
+      setSettingsOpen(true);
+      setStatusNote("Please enter a Gemini API key in Settings first.");
+      return;
+    }
 
     const userMessage: Message = {
       role: "user",
@@ -101,13 +119,17 @@ export default function Chat() {
         })
       });
 
-      const data = (await response.json()) as { reply?: string; error?: string };
+      const data = (await response.json()) as ChatResponse;
       if (!response.ok || !data.reply) {
+        if (data.code === "MISSING_API_KEY") {
+          setSettingsOpen(true);
+        }
         throw new Error(data.error ?? "Something went wrong.");
       }
 
       const reply = data.reply;
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      setStatusNote("");
     } catch (error) {
       setMessages((prev) => [
         ...prev,
@@ -149,6 +171,8 @@ export default function Chat() {
           </div>
         </header>
 
+        {statusNote && <div className={styles.statusNote}>{statusNote}</div>}
+
         {settingsOpen && (
           <section className={styles.settingsPanel}>
             <label className={styles.personaWrap}>
@@ -163,7 +187,7 @@ export default function Chat() {
             </label>
 
             <label className={styles.apiKeyWrap}>
-              Gemini API Key (optional override)
+              Gemini API Key (required)
               <div className={styles.apiKeyInputRow}>
                 <input
                   type={showApiKey ? "text" : "password"}
