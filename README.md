@@ -10,6 +10,7 @@ Ted is now a modern **Next.js** web app with a richer, interactive frontend and 
 - 🧠 **Mood-aware UX** (basic sentiment signal badge from user text)
 - 🧩 **Quick prompt chips** for faster starts
 - 🔐 **Secure server-side Gemini API calls** through `/api/chat`
+- 🛠️ **In-app API key editor** (optional browser-stored override for quick testing)
 - 📱 **Responsive, modern UI** with glassmorphism styling
 
 ## Tech Stack
@@ -37,8 +38,12 @@ Then edit `.env.local`:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+# Optional alias supported too:
+# GOOGLE_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-1.5-flash-latest
 ```
+
+You can also set an API key directly from the chat UI (**Open settings → Gemini API Key → Save key**). This is stored in your browser localStorage and sent as a request header to the server route. The app now opens settings automatically when no key is found.
 
 3. Start development server:
 
