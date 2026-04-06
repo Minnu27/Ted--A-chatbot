@@ -19,10 +19,43 @@ type GeminiResponse = {
   };
 };
 
+type GeminiAttemptResult = {
+  response: Response;
+  data: GeminiResponse;
+  model: string;
+  version: string;
+};
+
+function isModelNotFound(message: string): boolean {
+  const lower = message.toLowerCase();
+  return lower.includes("not found") || lower.includes("not supported for generatecontent");
+}
+
+async function callGemini(
+  apiKey: string,
+  model: string,
+  version: string,
+  payload: object,
+  signal: AbortSignal
+): Promise<GeminiAttemptResult> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal
+    }
+  );
+
+  const data = (await response.json()) as GeminiResponse;
+  return { response, data, model, version };
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-  const modelName = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
-  const apiVersion = process.env.GEMINI_API_VERSION ?? "v1";
+  const configuredModel = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
+  const configuredVersion = process.env.GEMINI_API_VERSION ?? "v1";
 
   if (!apiKey) {
     return NextResponse.json(
@@ -65,20 +98,44 @@ export async function POST(request: Request) {
     }
   };
 
+  const candidateModels = [configuredModel, configuredModel.replace(/-latest$/i, ""), "gemini-1.5-flash"];
+  const candidateVersions = [configuredVersion, "v1", "v1beta"];
+
+  const attempts: Array<{ model: string; version: string }> = [];
+  for (const version of candidateVersions) {
+    for (const model of candidateModels) {
+      const key = `${version}::${model}`;
+      if (!attempts.some((a) => `${a.version}::${a.model}` === key)) {
+        attempts.push({ version, model });
+      }
+    }
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25_000);
 
-  let response: Response;
+  let lastAttempt: GeminiAttemptResult | null = null;
+
   try {
-    response = await fetch(
-      `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal
+    for (const attempt of attempts) {
+      const result = await callGemini(apiKey, attempt.model, attempt.version, payload, controller.signal);
+      lastAttempt = result;
+
+      if (result.response.ok) {
+        const reply = result.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (!reply) {
+          return NextResponse.json({ error: "No reply returned by model." }, { status: 502 });
+        }
+        return NextResponse.json({ reply });
       }
-    );
+
+      const providerError = result.data.error?.message ?? "Gemini request failed.";
+      if (isModelNotFound(providerError)) {
+        continue;
+      }
+
+      return NextResponse.json({ error: providerError }, { status: result.response.status });
+    }
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {
       return NextResponse.json({ error: "Model request timed out. Please try again." }, { status: 504 });
@@ -88,32 +145,12 @@ export async function POST(request: Request) {
     clearTimeout(timeout);
   }
 
-  let data: GeminiResponse;
-  try {
-    data = (await response.json()) as GeminiResponse;
-  } catch {
-    return NextResponse.json({ error: "Invalid response returned by model provider." }, { status: 502 });
-  }
-
-  if (!response.ok) {
-    const providerError = data.error?.message ?? "Gemini request failed.";
-    if (providerError.toLowerCase().includes("not found")) {
-      return NextResponse.json(
-        {
-          error:
-            `Model \"${modelName}\" was not found for API version \"${apiVersion}\". Set GEMINI_MODEL in .env.local to a supported model.`
-        },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({ error: providerError }, { status: response.status });
-  }
-
-  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-  if (!reply) {
-    return NextResponse.json({ error: "No reply returned by model." }, { status: 502 });
-  }
-
-  return NextResponse.json({ reply });
+  const fallbackError = lastAttempt?.data.error?.message ?? "Gemini request failed.";
+  return NextResponse.json(
+    {
+      error:
+        `None of the attempted model/version combinations worked (${attempts.map((a) => `${a.model}@${a.version}`).join(", " )}). Last provider error: ${fallbackError}`
+    },
+    { status: 400 }
+  );
 }
