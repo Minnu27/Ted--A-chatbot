@@ -38,14 +38,6 @@
   gap: 0.5rem;
 }
 
-.statusNote {
-  padding: 0.65rem 0.8rem;
-  border-radius: 10px;
-  border: 1px solid rgba(109, 141, 255, 0.35);
-  background: rgba(109, 141, 255, 0.12);
-  color: #d8e2ff;
-  font-size: 0.9rem;
-}
 
 .settingsPanel {
   display: grid;
@@ -57,30 +49,30 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.personaWrap,
-.apiKeyWrap {
+.personaWrap {
   display: grid;
   gap: 0.45rem;
   font-size: 0.9rem;
 }
 
+.configHint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.configHint code {
+  color: #d8e2ff;
+}
+
 .personaWrap select,
-.inputRow input,
-.apiKeyInputRow input {
+.inputRow input {
   background: var(--surface-2);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 11px;
   padding: 0.65rem 0.75rem;
 }
 
-.apiKeyInputRow {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.apiKeyInputRow input {
-  flex: 1;
-}
 
 .metricsGrid {
   display: grid;
@@ -235,7 +227,6 @@
     flex-wrap: wrap;
   }
 
-  .apiKeyInputRow,
   .inputRow {
     flex-direction: column;
   }

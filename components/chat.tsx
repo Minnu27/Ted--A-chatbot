@@ -13,7 +13,6 @@ type Message = {
 type ChatResponse = {
   reply?: string;
   error?: string;
-  code?: "MISSING_API_KEY" | "INVALID_BODY" | "REQUEST_FAILED";
 };
 
 const quickPrompts = [
@@ -39,21 +38,8 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [showApiKey, setShowApiKey] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [statusNote, setStatusNote] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const storedKey = window.localStorage.getItem(API_KEY_STORAGE_KEY);
-    if (storedKey) {
-      setApiKey(storedKey);
-    } else {
-      setSettingsOpen(true);
-      setStatusNote("Add your Gemini API key in Settings to start chatting.");
-    }
-  }, []);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -73,17 +59,6 @@ export default function Chat() {
       total: messages.length
     };
   }, [messages]);
-
-  function saveApiKey() {
-    const trimmed = apiKey.trim();
-    if (!trimmed) {
-      window.localStorage.removeItem(API_KEY_STORAGE_KEY);
-      setStatusNote("API key removed from this browser.");
-      return;
-    }
-    window.localStorage.setItem(API_KEY_STORAGE_KEY, trimmed);
-    setStatusNote("API key saved in this browser. You can start chatting now.");
-  }
 
   async function sendMessage(content: string) {
     const trimmed = content.trim();
@@ -110,8 +85,7 @@ export default function Chat() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          ...(apiKey.trim() ? { "x-gemini-api-key": apiKey.trim() } : {})
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           persona,
@@ -158,7 +132,7 @@ export default function Chat() {
         <header className={styles.header}>
           <div>
             <h1>Ted — My Wing Man</h1>
-            <p>Advanced companion with persona switching, mood awareness, quick prompts, and API key settings.</p>
+            <p>Advanced companion with persona switching, mood awareness, and quick prompts.</p>
           </div>
 
           <div className={styles.actions}>
@@ -170,8 +144,6 @@ export default function Chat() {
             </button>
           </div>
         </header>
-
-        {statusNote && <div className={styles.statusNote}>{statusNote}</div>}
 
         {settingsOpen && (
           <section className={styles.settingsPanel}>
@@ -186,23 +158,9 @@ export default function Chat() {
               </select>
             </label>
 
-            <label className={styles.apiKeyWrap}>
-              Gemini API Key (required)
-              <div className={styles.apiKeyInputRow}>
-                <input
-                  type={showApiKey ? "text" : "password"}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Paste your key here (stored in browser localStorage)"
-                />
-                <button type="button" onClick={() => setShowApiKey((prev) => !prev)} className={styles.ghostBtn}>
-                  {showApiKey ? "Hide" : "Show"}
-                </button>
-                <button type="button" onClick={saveApiKey} className={styles.primaryBtn}>
-                  Save key
-                </button>
-              </div>
-            </label>
+            <p className={styles.configHint}>
+              API configuration is server-side only. Set <code>GEMINI_API_KEY</code> in your <code>.env.local</code>.
+            </p>
           </section>
         )}
 
