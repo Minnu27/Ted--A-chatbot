@@ -20,19 +20,25 @@ type GeminiResponse = {
 };
 
 export async function POST(request: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const modelName = process.env.GEMINI_MODEL ?? "gemini-1.5-flash-latest";
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const modelName = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
+  const apiVersion = process.env.GEMINI_API_VERSION ?? "v1";
+
   if (!apiKey) {
     return NextResponse.json(
-      { error: "Missing GEMINI_API_KEY environment variable." },
+      {
+        error: "Missing API key. Add GEMINI_API_KEY (or GOOGLE_API_KEY) in .env.local and restart the server."
+      },
       { status: 500 }
     );
   }
 
-  const body = (await request.json()) as {
-    persona?: PersonaKey;
-    messages?: IncomingMessage[];
-  };
+  let body: { persona?: PersonaKey; messages?: IncomingMessage[] };
+  try {
+    body = (await request.json()) as { persona?: PersonaKey; messages?: IncomingMessage[] };
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
 
   const persona = body.persona && body.persona in personas ? body.persona : "Bestie";
   const messages = body.messages ?? [];
@@ -65,7 +71,7 @@ export async function POST(request: Request) {
   let response: Response;
   try {
     response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,10 +96,18 @@ export async function POST(request: Request) {
   }
 
   if (!response.ok) {
-    return NextResponse.json(
-      { error: data.error?.message ?? "Gemini request failed." },
-      { status: response.status }
-    );
+    const providerError = data.error?.message ?? "Gemini request failed.";
+    if (providerError.toLowerCase().includes("not found")) {
+      return NextResponse.json(
+        {
+          error:
+            `Model \"${modelName}\" was not found for API version \"${apiVersion}\". Set GEMINI_MODEL in .env.local to a supported model.`
+        },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ error: providerError }, { status: response.status });
   }
 
   const reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();

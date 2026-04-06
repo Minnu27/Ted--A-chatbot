@@ -37,8 +37,13 @@ Then edit `.env.local`:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-1.5-flash-latest
+# Optional alias supported too:
+# GOOGLE_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-1.5-flash
+GEMINI_API_VERSION=v1
 ```
+
+API keys are server-side only. Set `GEMINI_API_KEY` (or `GOOGLE_API_KEY`) in `.env.local`, then restart your Next.js server.
 
 3. Start development server:
 
