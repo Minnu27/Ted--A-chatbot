@@ -151,7 +151,7 @@ export default function Chat() {
             </label>
 
             <p className={styles.configHint}>
-              API configuration is server-side only. Set <code>GEMINI_API_KEY</code> in your <code>.env.local</code>.
+              API configuration is server-side only. Set <code>GEMINI_API_KEY</code> (or <code>GOOGLE_API_KEY</code>) in your server environment variables.
             </p>
           </section>
         )}

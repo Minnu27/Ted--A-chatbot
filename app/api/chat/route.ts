@@ -26,6 +26,21 @@ type GeminiAttemptResult = {
   version: string;
 };
 
+function buildLocalFallbackReply(persona: PersonaKey, latestUserMessage: string): string {
+  const personaPrefix: Record<PersonaKey, string> = {
+    Bestie: "Bestie mode 💛",
+    Guardian: "Guardian mode 🛡️",
+    Cheerleader: "Cheerleader mode 🎉",
+    Sage: "Sage mode 🌿",
+    Realist: "Realist mode 🧭",
+    Coder: "Coder mode 💻"
+  };
+
+  const safeMessage = latestUserMessage.trim() || "your message";
+
+  return `${personaPrefix[persona]}: I can still chat right now in local fallback mode. Here's a quick response to "${safeMessage}":\n\n1) Clarify your goal in one sentence.\n2) Pick one small next step you can do in 10 minutes.\n3) Send me what you tried, and I'll refine the next step.`;
+}
+
 function isModelNotFound(message: string): boolean {
   const lower = message.toLowerCase();
   return lower.includes("not found") || lower.includes("not supported for generatecontent");
@@ -57,15 +72,6 @@ export async function POST(request: Request) {
   const configuredModel = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
   const configuredVersion = process.env.GEMINI_API_VERSION ?? "v1";
 
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        error: "Missing API key. Add GEMINI_API_KEY (or GOOGLE_API_KEY) in .env.local and restart the server."
-      },
-      { status: 500 }
-    );
-  }
-
   let body: { persona?: PersonaKey; messages?: IncomingMessage[] };
   try {
     body = (await request.json()) as { persona?: PersonaKey; messages?: IncomingMessage[] };
@@ -78,6 +84,12 @@ export async function POST(request: Request) {
 
   if (!messages.length) {
     return NextResponse.json({ error: "No messages were provided." }, { status: 400 });
+  }
+
+  if (!apiKey) {
+    const latestUserMessage = [...messages].reverse().find((message) => message.role === "user")?.content ?? "";
+    const reply = buildLocalFallbackReply(persona, latestUserMessage);
+    return NextResponse.json({ reply, mode: "local-fallback" });
   }
 
   const contents = messages.map((message) => ({
