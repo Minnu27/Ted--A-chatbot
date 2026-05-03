@@ -26,7 +26,7 @@ type GeminiAttemptResult = {
   version: string;
 };
 
-function buildLocalFallbackReply(persona: PersonaKey, latestUserMessage: string): string {
+function getPersonaPrefix(persona: PersonaKey): string {
   const personaPrefix: Record<PersonaKey, string> = {
     Bestie: "Bestie mode 💛",
     Guardian: "Guardian mode 🛡️",
@@ -36,9 +36,86 @@ function buildLocalFallbackReply(persona: PersonaKey, latestUserMessage: string)
     Coder: "Coder mode 💻"
   };
 
-  const safeMessage = latestUserMessage.trim() || "your message";
+  return personaPrefix[persona];
+}
 
-  return `${personaPrefix[persona]}: I can still chat right now in local fallback mode. Here's a quick response to "${safeMessage}":\n\n1) Clarify your goal in one sentence.\n2) Pick one small next step you can do in 10 minutes.\n3) Send me what you tried, and I'll refine the next step.`;
+function buildFinanceFallback(persona: PersonaKey, message: string): string {
+  const intro: Record<PersonaKey, string> = {
+    Bestie: "That sounds stressful, and you're doing the right thing by asking.",
+    Guardian: "Let's reduce risk first, then decide your next move.",
+    Cheerleader: "Good call asking early — we can absolutely make a plan.",
+    Sage: "Take a breath. We'll turn uncertainty into clear steps.",
+    Realist: "Here's the practical playbook.",
+    Coder: "Let's debug this like a system: inputs, constraints, output."
+  };
+
+  return `${getPersonaPrefix(persona)}: ${intro[persona]}\n\n1) Protect downside today: pause any new risky money moves for 24 hours.\n2) Snapshot your numbers: cash on hand, monthly expenses, debts (rate + EMI), and upcoming dues.\n3) Pick your priority: (a) stop losses, (b) reduce debt pressure, or (c) stabilize income.\n4) Send me these 4 details and I'll give you a concrete step-by-step plan:\n   • monthly income\n   • essential expenses\n   • total debt + interest rates\n   • urgent deadline (if any)\n\nFrom your message: "${message}"`; 
+}
+
+function buildCodingFallback(persona: PersonaKey, message: string): string {
+  const intro: Record<PersonaKey, string> = {
+    Bestie: "Nice — let's solve it together.",
+    Guardian: "We'll do this safely and systematically.",
+    Cheerleader: "Perfect, let's get that bug crushed 🎯",
+    Sage: "We'll simplify the problem until it becomes solvable.",
+    Realist: "Fastest path to fix:",
+    Coder: "Great, let's troubleshoot properly."
+  };
+
+  return `${getPersonaPrefix(persona)}: ${intro[persona]}\n\nShare these and I’ll respond with a precise fix:\n1) Exact error text\n2) File/snippet (20-40 lines)\n3) What you expected vs what happened\n4) What you already tried`; 
+}
+
+function buildGeneralFallback(persona: PersonaKey, message: string): string {
+  const voice: Record<PersonaKey, string> = {
+    Bestie: "I'm with you — let's handle this one step at a time.",
+    Guardian: "Let's keep this clear and safe.",
+    Cheerleader: "You've got momentum — let's use it.",
+    Sage: "Let's find the calm, effective next step.",
+    Realist: "Straight answer:",
+    Coder: "Let's structure this problem and solve it."
+  };
+
+  const nextStepByPersona: Record<PersonaKey, string> = {
+    Bestie: "Tell me your goal + what's blocking you most right now.",
+    Guardian: "Tell me the risk, timeline, and the decision you must make.",
+    Cheerleader: "Tell me your target and your next 15-minute action.",
+    Sage: "Tell me what outcome matters most and what feels hardest.",
+    Realist: "Give me facts: goal, constraint, and deadline.",
+    Coder: "Provide inputs, expected output, and current output."
+  };
+
+  return `${getPersonaPrefix(persona)}: ${voice[persona]}\n\nYou said: "${message}"\n\n${nextStepByPersona[persona]}`;
+}
+
+function buildLocalFallbackReply(persona: PersonaKey, latestUserMessage: string): string {
+  const safeMessage = latestUserMessage.trim();
+
+  if (!safeMessage) {
+    return `${getPersonaPrefix(persona)}: I'm in local fallback mode, but I can still help. Tell me your situation in one or two lines.`;
+  }
+
+  if (/^(hi|hello|hey|yo|sup|good\s?(morning|afternoon|evening))\b/i.test(safeMessage)) {
+    const greetingByPersona: Record<PersonaKey, string> = {
+      Bestie: "Hey 💛 I'm here with you. What do you want help with right now?",
+      Guardian: "Hey there. Tell me the situation and I'll help you decide safely.",
+      Cheerleader: "Hey! 🎉 Tell me your goal and let's make a quick win.",
+      Sage: "Hello 🌿 What's weighing on you today?",
+      Realist: "Hi. Share the situation in one line, and I'll give you a direct plan.",
+      Coder: "Hey 💻 Share the bug/problem and I'll help you solve it quickly."
+    };
+    return `${getPersonaPrefix(persona)}: ${greetingByPersona[persona]}`;
+  }
+
+  const lower = safeMessage.toLowerCase();
+  if (/(finance|money|debt|loan|salary|investment|loss|trading|stock|emi|credit card)/i.test(lower)) {
+    return buildFinanceFallback(persona, safeMessage);
+  }
+
+  if (/(code|bug|error|python|javascript|react|next\.js|api|compile|stack trace)/i.test(lower)) {
+    return buildCodingFallback(persona, safeMessage);
+  }
+
+  return buildGeneralFallback(persona, safeMessage);
 }
 
 function isModelNotFound(message: string): boolean {
@@ -161,7 +238,7 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       error:
-        `None of the attempted model/version combinations worked (${attempts.map((a) => `${a.model}@${a.version}`).join(", " )}). Last provider error: ${fallbackError}`
+        `None of the attempted model/version combinations worked (${attempts.map((a) => `${a.model}@${a.version}`).join(", ")}). Last provider error: ${fallbackError}`
     },
     { status: 400 }
   );
