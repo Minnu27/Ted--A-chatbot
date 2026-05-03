@@ -36,9 +36,36 @@ function buildLocalFallbackReply(persona: PersonaKey, latestUserMessage: string)
     Coder: "Coder mode 💻"
   };
 
-  const safeMessage = latestUserMessage.trim() || "your message";
+  const safeMessage = latestUserMessage.trim();
+  const isGreeting = /^(hi|hello|hey|yo|sup|good\s?(morning|afternoon|evening))\b/i.test(safeMessage);
 
-  return `${personaPrefix[persona]}: I can still chat right now in local fallback mode. Here's a quick response to "${safeMessage}":\n\n1) Clarify your goal in one sentence.\n2) Pick one small next step you can do in 10 minutes.\n3) Send me what you tried, and I'll refine the next step.`;
+  if (!safeMessage) {
+    return `${personaPrefix[persona]}: I'm running in local fallback mode right now, but I'm still here with you. Tell me what you want help with, and I'll give you a practical next step.`;
+  }
+
+  if (isGreeting) {
+    const greetingByPersona: Record<PersonaKey, string> = {
+      Bestie: "Hey! I'm here for you 💛 Tell me what's on your mind and I'll help you figure out the next step.",
+      Guardian: "Hey there. I'm here to help you think this through safely and clearly.",
+      Cheerleader: "Hey! Great to see you 🎉 Tell me your goal and let's build momentum.",
+      Sage: "Hello 🌿 Share what you're carrying, and we'll find a calm, useful direction.",
+      Realist: "Hi. Give me the situation in one line, and I'll suggest the fastest practical move.",
+      Coder: "Hey 💻 Tell me the bug or feature you're working on, plus any error text, and I'll help debug it."
+    };
+
+    return `${personaPrefix[persona]}: ${greetingByPersona[persona]}`;
+  }
+
+  const coachingByPersona: Record<PersonaKey, string> = {
+    Bestie: "You're not alone in this. Here's a gentle way to move forward:",
+    Guardian: "Let's keep this safe and steady. Try this:",
+    Cheerleader: "You've got this. Here's your momentum plan:",
+    Sage: "Let's simplify this into grounded action:",
+    Realist: "Straight answer — do this next:",
+    Coder: "Let's debug this methodically:"
+  };
+
+  return `${personaPrefix[persona]}: ${coachingByPersona[persona]}\n\n1) Goal: Rewrite your request in one clear sentence.\n2) Next step (10 min): Do the smallest action that moves it forward.\n3) Reply with what happened, and I'll refine your next move.\n\nYou said: "${safeMessage}"`;
 }
 
 function isModelNotFound(message: string): boolean {
